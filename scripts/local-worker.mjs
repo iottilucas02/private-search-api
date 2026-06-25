@@ -68,11 +68,22 @@ async function processNextTask() {
     });
     await recordEvent(task.id, "processing_started", "Local worker started processing");
 
-    const { data: apiKey } = await supabase
-      .from("api_keys")
-      .select("*")
-      .eq("id", task.api_key_id)
-      .maybeSingle();
+    let apiKey = null;
+
+    if (task.api_key_id) {
+      const { data: apiKeyData, error: apiKeyError } = await supabase
+        .from("api_keys")
+        .select("*")
+        .eq("id", task.api_key_id)
+        .maybeSingle();
+
+      if (apiKeyError) {
+        throw apiKeyError;
+      }
+
+      apiKey = apiKeyData;
+    }
+
     const scrapingEnabled = isScrapingEnabled(task, apiKey?.scraping_enabled !== false);
 
     const searchResponse = await searchWithTavily(task);

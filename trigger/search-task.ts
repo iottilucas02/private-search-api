@@ -11,6 +11,7 @@ import type { Database, Json } from "@/types/database";
 
 type SearchTaskRow = Database["public"]["Tables"]["search_tasks"]["Row"];
 type SearchResultRow = Database["public"]["Tables"]["search_results"]["Row"];
+type ApiKeyRow = Database["public"]["Tables"]["api_keys"]["Row"];
 
 export const processSearchTask = task({
   id: "process-search-task",
@@ -38,14 +39,20 @@ export const processSearchTask = task({
 
       taskRow = taskData;
 
-      const { data: apiKey, error: apiKeyError } = await supabase
-        .from("api_keys")
-        .select("*")
-        .eq("id", taskRow.api_key_id ?? "")
-        .maybeSingle();
+      let apiKey: ApiKeyRow | null = null;
 
-      if (apiKeyError) {
-        throw apiKeyError;
+      if (taskRow.api_key_id) {
+        const { data: apiKeyData, error: apiKeyError } = await supabase
+          .from("api_keys")
+          .select("*")
+          .eq("id", taskRow.api_key_id)
+          .maybeSingle();
+
+        if (apiKeyError) {
+          throw apiKeyError;
+        }
+
+        apiKey = apiKeyData;
       }
 
       await supabase
