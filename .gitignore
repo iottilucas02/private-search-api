@@ -1,0 +1,11 @@
+.next
+node_modules
+.DS_Store
+.env.local
+.env*.local
+vercel-env-to-paste.txt
+tsconfig.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*

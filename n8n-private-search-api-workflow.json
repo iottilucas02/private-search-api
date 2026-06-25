@@ -1,0 +1,265 @@
+{
+  "name": "Private Search API - n8n",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "Configure these placeholders before activating:\n\nPRIVATE_SEARCH_API_URL=http://127.0.0.1:3000\nPRIVATE_SEARCH_API_KEY=sk_search_replace_me\nCALLBACK_SECRET=replace-with-a-long-secret\n\nUse the first webhook to create searches. Use the second webhook URL as callback_url.",
+        "height": 260,
+        "width": 420
+      },
+      "id": "c5fd90d4-5dd0-4c6d-b477-21582f047b24",
+      "name": "Setup notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "path": "private-search/request",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1fcbf48e-6c7a-4ceb-89a5-dbf20834fd2d",
+      "name": "Webhook - Create search",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        120
+      ],
+      "webhookId": "private-search-request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body ?? $json;\n\nreturn [\n  {\n    json: {\n      query: body.query ?? 'pesquise sobre IA no Brasil',\n      search_type: body.search_type ?? 'web',\n      max_results: body.max_results ?? 5,\n      callback_url: body.callback_url,\n      callback_secret: body.callback_secret ?? 'replace-with-a-long-secret',\n      metadata: {\n        workflow: 'n8n-private-search-api',\n        requested_by: body.requested_by ?? 'n8n'\n      }\n    }\n  }\n];"
+      },
+      "id": "2563810d-2d5f-4f78-966d-827e2e45c34e",
+      "name": "Prepare payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.PRIVATE_SEARCH_API_URL || 'http://127.0.0.1:3000'}}/api/v1/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.PRIVATE_SEARCH_API_KEY || 'sk_search_replace_me'}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json)}}",
+        "options": {}
+      },
+      "id": "0dd4f68b-a358-4bb8-bcfd-3cb8a3fe1211",
+      "name": "Create search task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -80,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}",
+        "options": {}
+      },
+      "id": "df6f0c56-061c-488c-941c-4678fddbc21a",
+      "name": "Return task_id",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        160,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "path": "private-search/callback",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "05b9d140-02fc-46d0-b04f-fb12ad19a2bb",
+      "name": "Webhook - Search callback",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        480
+      ],
+      "webhookId": "private-search-callback"
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n\nconst headers = $json.headers ?? {};\nconst body = $json.body ?? $json;\nconst received = headers['x-search-signature'] ?? headers['X-Search-Signature'];\nconst secret = $env.CALLBACK_SECRET ?? 'replace-with-a-long-secret';\nconst expected = crypto.createHmac('sha256', secret).update(JSON.stringify(body)).digest('hex');\n\nif (!received || received !== expected) {\n  return [{ json: { valid: false, error: 'invalid_callback_signature' } }];\n}\n\nreturn [{ json: { valid: true, task: body.task, results: body.results, final_report: body.final_report } }];"
+      },
+      "id": "1897ece1-6f2a-4e2e-9961-8c638392f4a2",
+      "name": "Verify callback signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.valid}}",
+              "value2": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cb1ed78e-29ca-4f1e-a196-8d6d90403aac",
+      "name": "Signature valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "3fd315c5-0129-41fa-a063-bb23647c6e8e",
+      "name": "Acknowledge callback",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "78c3fef3-5bfd-4a01-a362-117f57414256",
+      "name": "Reject callback",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        580
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Create search": {
+      "main": [
+        [
+          {
+            "node": "Prepare payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare payload": {
+      "main": [
+        [
+          {
+            "node": "Create search task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create search task": {
+      "main": [
+        [
+          {
+            "node": "Return task_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Search callback": {
+      "main": [
+        [
+          {
+            "node": "Verify callback signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify callback signature": {
+      "main": [
+        [
+          {
+            "node": "Signature valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signature valid?": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge callback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "private-search-api-template",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "private-search-api-template",
+  "tags": []
+}
