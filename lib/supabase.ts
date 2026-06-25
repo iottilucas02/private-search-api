@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import WebSocket from "ws";
 
 import { getEnv } from "@/lib/env";
 import type { Database } from "@/types/database";
@@ -46,7 +47,10 @@ export function createServiceRoleClient(): AppSupabaseClient {
       auth: {
         autoRefreshToken: false,
         persistSession: false
+      },
+      realtime: {
+        transport: WebSocket
       }
     }
-  ) as AppSupabaseClient;
+  ) as unknown as AppSupabaseClient;
 }
