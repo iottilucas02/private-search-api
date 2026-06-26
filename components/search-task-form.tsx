@@ -9,7 +9,33 @@ type SearchRow = {
   id: number;
 };
 
-export function SearchTaskForm() {
+type SearchTaskFormProps = {
+  requestGroupId?: string;
+  videoTitle?: string;
+  videoContext?: string | null;
+  rowOffset?: number;
+  redirectTo?: string;
+  createError?: string;
+  title?: string;
+  subtitle?: string;
+  submitLabel?: string;
+  showVideoFields?: boolean;
+  queryPlaceholder?: string;
+};
+
+export function SearchTaskForm({
+  requestGroupId,
+  videoTitle = "",
+  videoContext = "",
+  rowOffset,
+  redirectTo,
+  createError,
+  title = "Nova solicitação",
+  subtitle = "Pesquisa agrupada por vídeo",
+  submitLabel = "Solicitar pesquisas",
+  showVideoFields = true,
+  queryPlaceholder = "Cole a busca gerada pelo Claude"
+}: SearchTaskFormProps) {
   const nextId = useRef(2);
   const [rows, setRows] = useState<SearchRow[]>([{ id: 1 }]);
 
@@ -31,14 +57,24 @@ export function SearchTaskForm() {
 
   return (
     <form action={createDashboardSearchTask} className="rounded-lg border border-line bg-white p-5 shadow-surface">
+      {requestGroupId ? <input type="hidden" name="request_group_id" value={requestGroupId} /> : null}
+      {redirectTo ? <input type="hidden" name="redirect_to" value={redirectTo} /> : null}
+      {typeof rowOffset === "number" ? <input type="hidden" name="row_offset" value={rowOffset} /> : null}
+      {!showVideoFields ? (
+        <>
+          <input type="hidden" name="video_title" value={videoTitle} />
+          <input type="hidden" name="video_context" value={videoContext ?? ""} />
+        </>
+      ) : null}
+
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-panel text-teal">
             <Search className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-ink">Nova solicitação</h2>
-            <p className="text-sm text-graphite">Pesquisa agrupada por vídeo</p>
+            <h2 className="text-lg font-semibold text-ink">{title}</h2>
+            <p className="text-sm text-graphite">{subtitle}</p>
           </div>
         </div>
 
@@ -47,31 +83,41 @@ export function SearchTaskForm() {
           className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-teal px-4 text-sm font-semibold text-white"
         >
           <Send className="h-4 w-4" />
-          Solicitar pesquisas
+          {submitLabel}
         </button>
       </div>
 
-      <div className="mb-5 grid gap-4 lg:grid-cols-[minmax(260px,420px)_1fr]">
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium text-graphite">Vídeo ou tema</span>
-          <input
-            name="video_title"
-            maxLength={120}
-            placeholder="Ex: Ataque à ponte ferroviária na Ucrânia"
-            className="focus-ring w-full rounded-md border border-line bg-field px-3 py-2"
-          />
-        </label>
+      {createError ? (
+        <div className="mb-5 rounded-md border border-rose/30 bg-rose/10 px-3 py-2 text-sm text-rose">
+          {createError}
+        </div>
+      ) : null}
 
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium text-graphite">Contexto interno</span>
-          <input
-            name="video_context"
-            maxLength={240}
-            placeholder="Opcional"
-            className="focus-ring w-full rounded-md border border-line bg-field px-3 py-2"
-          />
-        </label>
-      </div>
+      {showVideoFields ? (
+        <div className="mb-5 grid gap-4 lg:grid-cols-[minmax(260px,420px)_1fr]">
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-graphite">Vídeo ou tema</span>
+            <input
+              name="video_title"
+              maxLength={120}
+              defaultValue={videoTitle}
+              placeholder="Ex: Ataque à ponte ferroviária na Ucrânia"
+              className="focus-ring w-full rounded-md border border-line bg-field px-3 py-2"
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-graphite">Contexto interno</span>
+            <input
+              name="video_context"
+              maxLength={240}
+              defaultValue={videoContext ?? ""}
+              placeholder="Opcional"
+              className="focus-ring w-full rounded-md border border-line bg-field px-3 py-2"
+            />
+          </label>
+        </div>
+      ) : null}
 
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
@@ -97,7 +143,7 @@ export function SearchTaskForm() {
                   required={index === 0}
                   minLength={3}
                   maxLength={500}
-                  placeholder="Cole a busca gerada pelo Claude"
+                  placeholder={queryPlaceholder}
                   className="focus-ring w-full rounded-md border border-line bg-white px-3 py-2"
                 />
               </label>

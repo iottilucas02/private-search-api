@@ -1,9 +1,10 @@
-import { ArrowLeft, Clock, ExternalLink, Plus } from "lucide-react";
+import { ArrowLeft, Clock, ExternalLink, FileText } from "lucide-react";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
-import { createDashboardSearchTask } from "@/app/dashboard/tasks/actions";
 import { CopyButton } from "@/components/copy-button";
+import { SearchTaskForm } from "@/components/search-task-form";
 import { StatusBadge } from "@/components/status-badge";
 import { getVideoRequestDetail } from "@/lib/dashboard-data";
 import { formatDateTime, formatDuration, truncate } from "@/lib/format";
@@ -37,6 +38,8 @@ export default async function VideoRequestPage({ params, searchParams }: VideoRe
   const { request, resultsByTask, reportsByTask } = detail;
   const stats = getRequestStats(request);
   const pagePath = `/dashboard/requests/${request.id}`;
+  const creditsPath = `/creditos/${request.id}`;
+  const creditsUrl = await getAbsoluteUrl(creditsPath);
   const copyPack = buildRequestCopyPack(request.tasks, resultsByTask, reportsByTask);
 
   return (
@@ -66,6 +69,15 @@ export default async function VideoRequestPage({ params, searchParams }: VideoRe
           <div className="flex flex-wrap gap-2">
             <CopyButton text={request.title} label="Copiar título" />
             <CopyButton text={copyPack} label="Copiar pacote" />
+            <CopyButton text={creditsUrl} label="Copiar link créditos" />
+            <Link
+              href={creditsPath}
+              target="_blank"
+              className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-line bg-white px-3 text-sm font-medium text-graphite hover:bg-panel"
+            >
+              <FileText className="h-4 w-4" />
+              Abrir créditos
+            </Link>
           </div>
         </div>
 
@@ -77,115 +89,19 @@ export default async function VideoRequestPage({ params, searchParams }: VideoRe
         </dl>
       </section>
 
-      <section className="rounded-lg border border-line bg-white p-5 shadow-surface">
-        <h2 className="text-lg font-semibold text-ink">Adicionar pesquisa</h2>
-        {queryParams.create_error ? (
-          <div className="mt-3 rounded-md border border-rose/30 bg-rose/10 px-3 py-2 text-sm text-rose">
-            {queryParams.create_error}
-          </div>
-        ) : null}
-
-        <form action={createDashboardSearchTask} className="mt-4">
-          <input type="hidden" name="request_group_id" value={request.id} />
-          <input type="hidden" name="video_title" value={request.title} />
-          <input type="hidden" name="video_context" value={request.context ?? ""} />
-          <input type="hidden" name="row_offset" value={request.tasks.length} />
-          <input type="hidden" name="redirect_to" value={pagePath} />
-
-          <div className="grid gap-3 lg:grid-cols-[1fr_140px_120px_150px_auto] lg:items-end">
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-graphite">Nova consulta</span>
-              <input
-                name="query"
-                required
-                minLength={3}
-                maxLength={500}
-                placeholder="Adicionar outra busca para este vídeo"
-                className="focus-ring w-full rounded-md border border-line bg-field px-3 py-2"
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-graphite">Tipo</span>
-              <select
-                name="search_type"
-                defaultValue="web"
-                className="focus-ring w-full rounded-md border border-line bg-field px-3 py-2"
-              >
-                <option value="web">Web</option>
-                <option value="news">Notícias</option>
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-graphite">Resultados</span>
-              <input
-                name="max_results"
-                type="number"
-                min={1}
-                max={20}
-                defaultValue={5}
-                className="focus-ring w-full rounded-md border border-line bg-field px-3 py-2"
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-graphite">Conteúdo</span>
-              <select
-                name="scraping_enabled"
-                defaultValue="true"
-                className="focus-ring w-full rounded-md border border-line bg-field px-3 py-2"
-              >
-                <option value="true">Completo</option>
-                <option value="false">Rápido</option>
-              </select>
-            </label>
-
-            <button
-              type="submit"
-              className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-teal px-4 text-sm font-semibold text-white"
-            >
-              <Plus className="h-4 w-4" />
-              Solicitar
-            </button>
-          </div>
-
-          <details className="mt-3">
-            <summary className="cursor-pointer text-sm font-semibold text-teal">Pesquisa avançada</summary>
-            <div className="mt-3 grid gap-3 lg:grid-cols-3">
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-graphite">País ou região</span>
-                <input
-                  name="country"
-                  maxLength={80}
-                  placeholder="Ex: Ukraine"
-                  className="focus-ring w-full rounded-md border border-line bg-field px-3 py-2"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-graphite">Priorizar domínios</span>
-                <input
-                  name="include_domains"
-                  maxLength={500}
-                  placeholder="reuters.com, apnews.com"
-                  className="focus-ring w-full rounded-md border border-line bg-field px-3 py-2"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-graphite">Excluir domínios</span>
-                <input
-                  name="exclude_domains"
-                  maxLength={500}
-                  placeholder="reddit.com, wikipedia.org"
-                  className="focus-ring w-full rounded-md border border-line bg-field px-3 py-2"
-                />
-              </label>
-            </div>
-          </details>
-        </form>
-      </section>
+      <SearchTaskForm
+        requestGroupId={request.id}
+        videoTitle={request.title}
+        videoContext={request.context}
+        rowOffset={request.tasks.length}
+        redirectTo={pagePath}
+        createError={queryParams.create_error}
+        title="Adicionar pesquisas"
+        subtitle="Inclua uma ou mais consultas neste vídeo"
+        submitLabel="Solicitar novas pesquisas"
+        showVideoFields={false}
+        queryPlaceholder="Adicionar outra busca para este vídeo"
+      />
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold text-ink">Pesquisas e fontes</h2>
@@ -299,6 +215,8 @@ function TaskPanel({
 }
 
 function SourceCard({ result }: { result: SearchResult }) {
+  const sourceText = buildSourceCopyText(result);
+
   return (
     <article className="rounded-md border border-line bg-white p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -314,7 +232,7 @@ function SourceCard({ result }: { result: SearchResult }) {
             <ExternalLink className="h-3 w-3 shrink-0" />
           </a>
         </div>
-        <CopyButton text={result.url} label="Copiar link" />
+        <CopyButton text={sourceText} label="Copiar texto" />
       </div>
 
       {result.snippet ? <p className="mt-3 text-sm leading-6 text-graphite">{result.snippet}</p> : null}
@@ -326,6 +244,10 @@ function SourceCard({ result }: { result: SearchResult }) {
       ) : null}
     </article>
   );
+}
+
+function buildSourceCopyText(result: SearchResult) {
+  return result.cleaned_content || result.raw_content || result.snippet || result.title || result.url;
 }
 
 function Info({ label, value }: { label: string; value: string }) {
@@ -369,4 +291,19 @@ function buildSourcesText(results: SearchResult[]) {
         .join("\n")
     )
     .join("\n\n");
+}
+
+async function getAbsoluteUrl(path: string) {
+  const headerStore = await headers();
+  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
+
+  if (!host) {
+    return path;
+  }
+
+  const protocol =
+    headerStore.get("x-forwarded-proto") ??
+    (host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https");
+
+  return `${protocol}://${host}${path}`;
 }
