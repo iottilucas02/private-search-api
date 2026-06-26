@@ -1,9 +1,9 @@
-import { ArrowLeft, Clock, ExternalLink, FileText } from "lucide-react";
+import { ArrowLeft, Clock, ExternalLink } from "lucide-react";
 import Link from "next/link";
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { CopyButton } from "@/components/copy-button";
+import { GoogleCreditsButton } from "@/components/google-credits-button";
 import { SearchTaskForm } from "@/components/search-task-form";
 import { StatusBadge } from "@/components/status-badge";
 import { getVideoRequestDetail } from "@/lib/dashboard-data";
@@ -38,8 +38,6 @@ export default async function VideoRequestPage({ params, searchParams }: VideoRe
   const { request, resultsByTask, reportsByTask } = detail;
   const stats = getRequestStats(request);
   const pagePath = `/dashboard/requests/${request.id}`;
-  const creditsPath = `/creditos/${request.id}`;
-  const creditsUrl = await getAbsoluteUrl(creditsPath);
   const copyPack = buildRequestCopyPack(request.tasks, resultsByTask, reportsByTask);
 
   return (
@@ -69,15 +67,7 @@ export default async function VideoRequestPage({ params, searchParams }: VideoRe
           <div className="flex flex-wrap gap-2">
             <CopyButton text={request.title} label="Copiar título" />
             <CopyButton text={copyPack} label="Copiar pacote" />
-            <CopyButton text={creditsUrl} label="Copiar link créditos" />
-            <Link
-              href={creditsPath}
-              target="_blank"
-              className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-line bg-white px-3 text-sm font-medium text-graphite hover:bg-panel"
-            >
-              <FileText className="h-4 w-4" />
-              Abrir créditos
-            </Link>
+            <GoogleCreditsButton requestId={request.id} />
           </div>
         </div>
 
@@ -291,19 +281,4 @@ function buildSourcesText(results: SearchResult[]) {
         .join("\n")
     )
     .join("\n\n");
-}
-
-async function getAbsoluteUrl(path: string) {
-  const headerStore = await headers();
-  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
-
-  if (!host) {
-    return path;
-  }
-
-  const protocol =
-    headerStore.get("x-forwarded-proto") ??
-    (host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https");
-
-  return `${protocol}://${host}${path}`;
 }

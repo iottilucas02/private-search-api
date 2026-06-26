@@ -129,3 +129,25 @@ function normalizeSourceUrl(value: string) {
     return value.trim().toLowerCase().replace(/\/$/, "");
   }
 }
+
+export function buildCreditsPlainText(document: CreditsDocument) {
+  const lines = [
+    "Créditos e referências",
+    "",
+    document.request.title,
+    "",
+    "Fontes consultadas:",
+    ""
+  ];
+
+  if (document.sources.length === 0) {
+    lines.push("Nenhuma fonte coletada ainda.");
+    return lines.join("\n");
+  }
+
+  for (const [index, source] of document.sources.entries()) {
+    lines.push(`${index + 1}. ${source.title}`, source.url, "");
+  }
+
+  return lines.join("\n").trimEnd();
+}
