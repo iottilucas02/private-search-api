@@ -1,13 +1,12 @@
 "use server";
 
 import { requireUser } from "@/lib/auth";
-import { createGoogleCreditsDocument } from "@/lib/google-docs";
+import { buildCreditsPlainText, getCreditsDocument } from "@/lib/credits";
 
-type CreateGoogleCreditsDocResult =
+type GetCreditsTextResult =
   | {
       ok: true;
-      url: string;
-      editUrl: string;
+      text: string;
       sourceCount: number;
     }
   | {
@@ -15,21 +14,35 @@ type CreateGoogleCreditsDocResult =
       error: string;
     };
 
-export async function createGoogleCreditsDocAction(requestId: string): Promise<CreateGoogleCreditsDocResult> {
+export async function getCreditsTextAction(requestId: string): Promise<GetCreditsTextResult> {
   const user = await requireUser();
 
   try {
-    const document = await createGoogleCreditsDocument(requestId, { userId: user.id });
+    const document = await getCreditsDocument(requestId);
+
+    if (!document) {
+      return {
+        ok: false,
+        error: "Solicitação não encontrada."
+      };
+    }
+
+    if (!document.request.tasks.some((task) => task.user_id === user.id)) {
+      return {
+        ok: false,
+        error: "Você não tem acesso a esta solicitação."
+      };
+    }
+
     return {
       ok: true,
-      url: document.previewUrl,
-      editUrl: document.editUrl,
-      sourceCount: document.sourceCount
+      text: buildCreditsPlainText(document),
+      sourceCount: document.sources.length
     };
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : "Não foi possível gerar o Google Docs."
+      error: error instanceof Error ? error.message : "Não foi possível montar os créditos."
     };
   }
 }

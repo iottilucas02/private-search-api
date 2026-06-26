@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CopyButton } from "@/components/copy-button";
-import { GoogleCreditsButton } from "@/components/google-credits-button";
+import { CreditsCopyButton } from "@/components/credits-copy-button";
 import { SearchTaskForm } from "@/components/search-task-form";
 import { StatusBadge } from "@/components/status-badge";
 import { getVideoRequestDetail } from "@/lib/dashboard-data";
@@ -67,7 +67,7 @@ export default async function VideoRequestPage({ params, searchParams }: VideoRe
           <div className="flex flex-wrap gap-2">
             <CopyButton text={request.title} label="Copiar título" />
             <CopyButton text={copyPack} label="Copiar pacote" />
-            <GoogleCreditsButton requestId={request.id} />
+            <CreditsCopyButton requestId={request.id} />
           </div>
         </div>
 
