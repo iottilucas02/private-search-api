@@ -1,7 +1,8 @@
-import { ArrowLeft, Clock, ExternalLink } from "lucide-react";
+import { ArrowLeft, Clock, ExternalLink, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { deleteSearchResult } from "@/app/dashboard/requests/actions";
 import { CopyButton } from "@/components/copy-button";
 import { CreditsCopyButton } from "@/components/credits-copy-button";
 import { SearchTaskForm } from "@/components/search-task-form";
@@ -102,6 +103,7 @@ export default async function VideoRequestPage({ params, searchParams }: VideoRe
             task={task}
             results={resultsByTask.get(task.id) ?? []}
             report={reportsByTask.get(task.id) ?? null}
+            requestId={request.id}
           />
         ))}
       </section>
@@ -113,12 +115,14 @@ function TaskPanel({
   index,
   task,
   results,
-  report
+  report,
+  requestId
 }: {
   index: number;
   task: SearchTaskRow;
   results: SearchResult[];
   report: FinalReport | null;
+  requestId: string;
 }) {
   const metadata = getMetadata(task.metadata);
   const sourcesText = buildSourcesText(results);
@@ -191,7 +195,7 @@ function TaskPanel({
         <div className="space-y-3">
           <h4 className="text-sm font-semibold text-ink">Fontes</h4>
           {results.map((result) => (
-            <SourceCard key={result.id} result={result} />
+            <SourceCard key={result.id} result={result} requestId={requestId} />
           ))}
           {results.length === 0 ? (
             <div className="rounded-md border border-line bg-panel p-5 text-center text-sm text-graphite">
@@ -204,7 +208,7 @@ function TaskPanel({
   );
 }
 
-function SourceCard({ result }: { result: SearchResult }) {
+function SourceCard({ result, requestId }: { result: SearchResult; requestId: string }) {
   const sourceText = buildSourceCopyText(result);
 
   return (
@@ -222,7 +226,22 @@ function SourceCard({ result }: { result: SearchResult }) {
             <ExternalLink className="h-3 w-3 shrink-0" />
           </a>
         </div>
-        <CopyButton text={sourceText} label="Copiar texto" />
+        <div className="flex flex-wrap gap-2">
+          <CopyButton text={sourceText} label="Copiar texto" />
+          <form action={deleteSearchResult}>
+            <input type="hidden" name="result_id" value={result.id} />
+            <input type="hidden" name="request_id" value={requestId} />
+            <button
+              type="submit"
+              className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-rose/30 bg-rose/10 px-3 text-sm font-medium text-rose hover:bg-rose/15"
+              aria-label="Excluir fonte"
+              title="Excluir fonte"
+            >
+              <Trash2 className="h-4 w-4" />
+              Excluir
+            </button>
+          </form>
+        </div>
       </div>
 
       {result.snippet ? <p className="mt-3 text-sm leading-6 text-graphite">{result.snippet}</p> : null}
