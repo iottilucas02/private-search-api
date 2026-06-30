@@ -2,7 +2,7 @@ import { ArrowLeft, Clock, ExternalLink, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { deleteSearchResult } from "@/app/dashboard/requests/actions";
+import { deleteSearchTaskBlock } from "@/app/dashboard/requests/actions";
 import { CopyButton } from "@/components/copy-button";
 import { CreditsCopyButton } from "@/components/credits-copy-button";
 import { SearchTaskForm } from "@/components/search-task-form";
@@ -147,7 +147,22 @@ function TaskPanel({
             {formatDateTime(task.created_at)} · {formatDuration(task.started_at, task.completed_at)}
           </p>
         </div>
-        <StatusBadge status={task.status} />
+        <div className="flex shrink-0 items-center gap-2">
+          <StatusBadge status={task.status} />
+          <form action={deleteSearchTaskBlock}>
+            <input type="hidden" name="task_id" value={task.id} />
+            <input type="hidden" name="request_id" value={requestId} />
+            <button
+              type="submit"
+              className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-rose/30 bg-rose/10 px-3 text-sm font-medium text-rose hover:bg-rose/15"
+              aria-label="Excluir pesquisa"
+              title="Excluir pesquisa"
+            >
+              <Trash2 className="h-4 w-4" />
+              Excluir
+            </button>
+          </form>
+        </div>
       </summary>
 
       <div className="space-y-4 border-t border-line p-4">
@@ -195,7 +210,7 @@ function TaskPanel({
         <div className="space-y-3">
           <h4 className="text-sm font-semibold text-ink">Fontes</h4>
           {results.map((result) => (
-            <SourceCard key={result.id} result={result} requestId={requestId} />
+            <SourceCard key={result.id} result={result} />
           ))}
           {results.length === 0 ? (
             <div className="rounded-md border border-line bg-panel p-5 text-center text-sm text-graphite">
@@ -208,7 +223,7 @@ function TaskPanel({
   );
 }
 
-function SourceCard({ result, requestId }: { result: SearchResult; requestId: string }) {
+function SourceCard({ result }: { result: SearchResult }) {
   const sourceText = buildSourceCopyText(result);
 
   return (
@@ -228,19 +243,6 @@ function SourceCard({ result, requestId }: { result: SearchResult; requestId: st
         </div>
         <div className="flex flex-wrap gap-2">
           <CopyButton text={sourceText} label="Copiar texto" />
-          <form action={deleteSearchResult}>
-            <input type="hidden" name="result_id" value={result.id} />
-            <input type="hidden" name="request_id" value={requestId} />
-            <button
-              type="submit"
-              className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-rose/30 bg-rose/10 px-3 text-sm font-medium text-rose hover:bg-rose/15"
-              aria-label="Excluir fonte"
-              title="Excluir fonte"
-            >
-              <Trash2 className="h-4 w-4" />
-              Excluir
-            </button>
-          </form>
         </div>
       </div>
 
